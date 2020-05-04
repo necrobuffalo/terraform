@@ -83,6 +83,33 @@ resource "google_dns_record_set" "cname_mail_frontend" {
 
 
 # Bastion
+resource "google_compute_address" "bastion_ip" {
+  name = "bastion-static-ip"
+}
+resource "google_dns_record_set" "bastion" {
+  name = "bastion.${google_dns_managed_zone.sev.dns_name}"
+  managed_zone = google_dns_managed_zone.sev.name
+  type = "A"
+  ttl = 300
+  rrdatas = [google_compute_address.bastion_ip.address]
+}
+resource "google_compute_instance" "bastion" {
+  name = "bastion"
+  machine_type = "g1-small"
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-9"
+    }
+  }
+
+  network_interface {
+    network = google_compute_network.default.name
+    access_config {
+      nat_ip = google_compute_address.bastion_ip.address
+    }
+  }
+}
 
 
 # Minecraft
