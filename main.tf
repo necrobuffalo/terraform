@@ -112,67 +112,71 @@ resource "google_compute_instance" "bastion" {
 }
 
 
-# # Minecraft
-# resource "google_compute_address" "minecraft_ip" {
-#   name = "minecraft-static-ip"
-# }
+# Minecraft
+resource "google_compute_address" "minecraft_ip" {
+  name = "minecraft-static-ip"
+}
 
-# resource "google_dns_record_set" "minecraft" {
-#   name = "mc.${google_dns_managed_zone.sev.dns_name}"
-#   managed_zone = google_dns_managed_zone.sev.name
-#   type = "A"
-#   ttl = 300
-#   rrdatas = [google_compute_address.minecraft_ip.address]
-# }
+resource "google_dns_record_set" "minecraft" {
+  name = "mc.${google_dns_managed_zone.sev.dns_name}"
+  managed_zone = google_dns_managed_zone.sev.name
+  type = "A"
+  ttl = 300
+  rrdatas = [google_compute_address.minecraft_ip.address]
+}
 
-# resource "google_compute_instance" "minecraft" {
-#   name         = "minecraft"
-#   machine_type = "n1-standard-2"
+resource "google_compute_instance" "minecraft" {
+  name         = "minecraft"
+  machine_type = "n1-standard-2"
 
-#   boot_disk {
-#     initialize_params {
-#       image = "debian-cloud/debian-9"
-#       type  = "pd-ssd"
-#     }
-#   }
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-10"
+      type  = "pd-ssd"
+    }
+  }
 
-#   tags = ["minecraft"]
+  tags = ["minecraft"]
 
-#   attached_disk {
-#     source = google_compute_disk.minecraft_ssd.name
-#     device_name = "minecraft-worlds"
-#   }
+  attached_disk {
+    source = google_compute_disk.minecraft_ssd.name
+    device_name = "minecraft-worlds"
+  }
 
-#   network_interface {
-#     network = google_compute_network.default.name
-#     access_config {
-#       nat_ip = google_compute_address.minecraft_ip.address
-#     }
-#   }
-# }
+  network_interface {
+    network = google_compute_network.default.name
+    access_config {
+      nat_ip = google_compute_address.minecraft_ip.address
+    }
+  }
 
-# # 30gb disk to put worlds on
-# resource "google_compute_disk" "minecraft_ssd" {
-#   name = "minecraft-worlds"
-#   type = "pd-ssd"
+  metadata = {
+    startup-script = file("./minecraft_startup.sh")
+  }
+}
 
-#   size = 30
-# }
+# 30gb disk to put worlds on
+resource "google_compute_disk" "minecraft_ssd" {
+  name = "minecraft-worlds"
+  type = "pd-ssd"
 
-# # Allow tcp/udp on the standard minecraft server port
-# resource "google_compute_firewall" "minecraft" {
-#   name = "default-allow-minecraft"
-#   network = google_compute_network.default.name
+  size = 20
+}
 
-#   target_tags = ["minecraft"]
+# Allow tcp/udp on the standard minecraft server port
+resource "google_compute_firewall" "minecraft" {
+  name = "default-allow-minecraft"
+  network = google_compute_network.default.name
 
-#   allow {
-#     protocol = "tcp"
-#     ports = [25565]
-#   }
+  target_tags = ["minecraft"]
 
-#   allow {
-#     protocol = "udp"
-#     ports = [25565]
-#   }
-# }
+  allow {
+    protocol = "tcp"
+    ports = [25565]
+  }
+
+  allow {
+    protocol = "udp"
+    ports = [25565]
+  }
+}
